@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
@@ -28,6 +29,8 @@ async function run() {
     await client.connect();
 
     const serviceCollection = client.db("harMoney").collection("services");
+
+    app.post("/jwt", async (req, res) => {});
 
     app.get("/services", async (req, res) => {
       const cursor = serviceCollection.find();
