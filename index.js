@@ -29,6 +29,7 @@ async function run() {
     await client.connect();
 
     const serviceCollection = client.db("harMoney").collection("services");
+    const bookingCollections = client.db("harMoney").collection("booking");
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -64,6 +65,12 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/booking", async (req, res) => {
+      const booking = req.body;
+      console.log(booking);
+      const result = await bookingCollections.insertOne(booking);
+      res.send(result);
+    });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
