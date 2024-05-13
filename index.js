@@ -7,7 +7,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 //middlewere
-app.use(cors());
+app.use(cors({ origin: ["http://localhost:5173"], credentials: true }));
 app.use(express.json());
 
 console.log(process.env.BD_USER);
@@ -30,7 +30,20 @@ async function run() {
 
     const serviceCollection = client.db("harMoney").collection("services");
 
-    app.post("/jwt", async (req, res) => {});
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      console.log("user for token", user);
+      const token = jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {
+        expiresIn: "1h",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+        })
+        .send({ success: true });
+    });
 
     app.get("/services", async (req, res) => {
       const cursor = serviceCollection.find();
