@@ -65,12 +65,18 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/booking", async (req, res) => {
+      const result = await bookingCollections.find().toArray();
+      res.send(result);
+    });
+
     app.post("/booking", async (req, res) => {
       const booking = req.body;
       console.log(booking);
       const result = await bookingCollections.insertOne(booking);
       res.send(result);
     });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
