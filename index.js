@@ -61,12 +61,23 @@ async function run() {
     app.get("/services/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
+
+      const options = {
+        // Include only the `title` and `imdb` fields in the returned document
+        projection: { date: 1, price: 1, service_id: 1, img: 1, size: 1 },
+      };
+
       const result = await serviceCollection.findOne(query);
       res.send(result);
     });
 
     app.get("/booking", async (req, res) => {
-      const result = await bookingCollections.find().toArray();
+      console.log(req.query._id);
+      let query = {};
+      if (req.query?._id) {
+        query = { _id: req.query._id };
+      }
+      const result = await bookingCollections.find(query).toArray();
       res.send(result);
     });
 
