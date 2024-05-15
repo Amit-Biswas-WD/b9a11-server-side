@@ -8,7 +8,16 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 //middlewere
-app.use(cors({ origin: ["http://localhost:5173"], credentials: true }));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://assignment-11-2b4f2.web.app",
+      "https://assignment-11-2b4f2.firebaseapp.com",
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -51,10 +60,16 @@ const verifyToken = async (req, res, next) => {
   });
 };
 
+const cookieOption = {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+  secure: process.env.NODE_ENV === "production" ? true : false,
+};
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const serviceCollection = client.db("harMoney").collection("services");
     const bookingCollections = client.db("harMoney").collection("booking");
@@ -66,7 +81,7 @@ async function run() {
         expiresIn: "24h",
       });
       res
-        .cookie("token", token, {
+        .cookie("token", token, cookieOption, {
           httpOnly: true,
           secure: true,
           sameSite: "none",
@@ -77,7 +92,9 @@ async function run() {
     app.post("/logout", async (req, res) => {
       const user = req.body;
       console.log("logging out ", user);
-      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+      res
+        .clearCookie("token", { ...cookieOption, maxAge: 0 })
+        .send({ success: true });
     });
 
     app.get("/services", logger, async (req, res) => {
@@ -146,7 +163,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
