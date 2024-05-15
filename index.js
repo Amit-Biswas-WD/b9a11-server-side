@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
@@ -9,6 +10,7 @@ const port = process.env.PORT || 5000;
 //middlewere
 app.use(cors({ origin: ["http://localhost:5173"], credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 console.log(process.env.BD_USER);
 
@@ -23,6 +25,32 @@ const client = new MongoClient(uri, {
   },
 });
 
+// middlewere
+const logger = async (req, res, next) => {
+  console.log("log: info", req.host, req.url);
+  next();
+};
+
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies?.token;
+  console.log("token in the middleware", token);
+
+  if (!token) {
+    return res.status(401).send({ message: "Token missing or invalid" });
+  }
+
+  jwt.verify(token, process.env.ACCESS_SECRET_TOKEN, (err, decoded) => {
+    if (err) {
+      console.error("Token verification error:", err);
+      return res.status(401).send({ message: "Token expired or invalid" });
+    }
+
+    console.log("value in the token", decoded);
+    req.user = decoded;
+    next();
+  });
+};
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -31,11 +59,11 @@ async function run() {
     const serviceCollection = client.db("harMoney").collection("services");
     const bookingCollections = client.db("harMoney").collection("booking");
 
-    app.post("/jwt", async (req, res) => {
+    app.post("/jwt", logger, async (req, res) => {
       const user = req.body;
       console.log("user for token", user);
       const token = jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {
-        expiresIn: "1h",
+        expiresIn: "24h",
       });
       res
         .cookie("token", token, {
@@ -52,7 +80,7 @@ async function run() {
       res.clearCookie("token", { maxAge: 0 }).send({ success: true });
     });
 
-    app.get("/services", async (req, res) => {
+    app.get("/services", logger, async (req, res) => {
       const cursor = serviceCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -71,8 +99,11 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/booking", async (req, res) => {
+    app.get("/booking", logger, async (req, res) => {
       console.log(req.query._id);
+      // console.log("tok tok token", req.cookies.token);
+      console.log("user in the valid token", req.user);
+
       let query = {};
       if (req.query?._id) {
         query = { _id: req.query._id };
@@ -85,6 +116,25 @@ async function run() {
       const booking = req.body;
       console.log(booking);
       const result = await bookingCollections.insertOne(booking);
+      res.send(result);
+    });
+
+    app.put("/booking/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedBooking = req.body;
+      const filter = { _id: new ObjectId(id) };
+      console.log(updatedBooking);
+      const optional = { upsert: true };
+      const updateDoc = {
+        $set: {
+          ...updatedBooking,
+        },
+      };
+      const result = await bookingCollections.updateOne(
+        filter,
+        updateDoc,
+        optional
+      );
       res.send(result);
     });
 
