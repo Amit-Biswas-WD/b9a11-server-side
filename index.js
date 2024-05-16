@@ -136,25 +136,6 @@ async function run() {
       res.send(result);
     });
 
-    app.put("/booking/:id", async (req, res) => {
-      const id = req.params.id;
-      const updatedBooking = req.body;
-      const filter = { _id: new ObjectId(id) };
-      console.log(updatedBooking);
-      const optional = { upsert: true };
-      const updateDoc = {
-        $set: {
-          ...updatedBooking,
-        },
-      };
-      const result = await bookingCollections.updateOne(
-        filter,
-        updateDoc,
-        optional
-      );
-      res.send(result);
-    });
-
     app.delete("/booking/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
