@@ -10,20 +10,14 @@ const port = process.env.PORT || 5000;
 //middlewere
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://assignment-11-2b4f2.web.app",
-      "https://assignment-11-2b4f2.firebaseapp.com",
-    ],
+    origin: ["http://localhost:5173"],
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(cookieParser());
 
-console.log(process.env.BD_USER);
-
-const uri = `mongodb+srv://${process.env.BD_USER}:${process.env.BD_PASS}@cluster0.zyvach0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.yit3t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -69,7 +63,7 @@ const cookieOption = {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
 
     const serviceCollection = client.db("harMoney").collection("services");
     const bookingCollections = client.db("harMoney").collection("booking");
@@ -117,13 +111,10 @@ async function run() {
     });
 
     app.get("/booking", logger, async (req, res) => {
-      console.log(req.query._id);
-      // console.log("tok tok token", req.cookies.token);
-      console.log("user in the valid token", req.user);
-
+      const email = req.query.email;
       let query = {};
-      if (req.query?._id) {
-        query = { _id: req.query._id };
+      if (email) {
+        query = { email: email };
       }
       const result = await bookingCollections.find(query).toArray();
       res.send(result);
@@ -136,6 +127,13 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/booking/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingCollections.findOne(query);
+      res.send(result);
+    });
+
     app.delete("/booking/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -144,7 +142,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
+    await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
