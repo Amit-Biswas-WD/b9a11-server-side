@@ -134,6 +134,30 @@ async function run() {
       res.send(result);
     });
 
+    app.put("/booking/:id", async (req, res) => {
+      const id = req.params.id;
+      const booking = req.body;
+      console.log(id, booking);
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateValue = {
+        $set: {
+          data: booking.data,
+          rating_4: booking.rating_4,
+          price: booking.price,
+          size: booking.size,
+          img: booking.img,
+          offer: booking.offer,
+        },
+      };
+      const result = await bookingCollections.updateOne(
+        filter,
+        updateValue,
+        options
+      );
+      res.send(result);
+    });
+
     app.delete("/booking/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
