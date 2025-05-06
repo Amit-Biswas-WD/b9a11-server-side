@@ -4,13 +4,13 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
+
 const app = express();
 const port = process.env.PORT || 5000;
 
-//middlewere
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
@@ -19,7 +19,6 @@ app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.yit3t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -28,9 +27,8 @@ const client = new MongoClient(uri, {
   },
 });
 
-// middlewere
 const logger = async (req, res, next) => {
-  console.log("log: info", req.host, req.url);
+  console.log("log: info", req.method, req.url);
   next();
 };
 
@@ -62,7 +60,6 @@ const cookieOption = {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
     const serviceCollection = client.db("harMoney").collection("services");
@@ -74,13 +71,8 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {
         expiresIn: "24h",
       });
-      res
-        .cookie("token", token, cookieOption, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "none",
-        })
-        .send({ success: true });
+
+      res.cookie("token", token, cookieOption).send({ success: true });
     });
 
     app.post("/logout", async (req, res) => {
@@ -92,38 +84,21 @@ async function run() {
     });
 
     app.get("/services", logger, async (req, res) => {
-      const cursor = serviceCollection.find();
-      const result = await cursor.toArray();
+      const result = await serviceCollection.find().toArray();
       res.send(result);
     });
 
     app.get("/services/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-
-      const options = {
-        // Include only the `title` and `imdb` fields in the returned document
-        projection: { date: 1, price: 1, service_id: 1, img: 1, size: 1 },
-      };
-
       const result = await serviceCollection.findOne(query);
       res.send(result);
     });
 
     app.get("/booking", logger, async (req, res) => {
       const email = req.query.email;
-      let query = {};
-      if (email) {
-        query = { email: email };
-      }
+      const query = email ? { email } : {};
       const result = await bookingCollections.find(query).toArray();
-      res.send(result);
-    });
-
-    app.post("/booking", async (req, res) => {
-      const booking = req.body;
-      console.log(booking);
-      const result = await bookingCollections.insertOne(booking);
       res.send(result);
     });
 
@@ -134,10 +109,15 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/booking", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingCollections.insertOne(booking);
+      res.send(result);
+    });
+
     app.put("/booking/:id", async (req, res) => {
       const id = req.params.id;
       const booking = req.body;
-      console.log(id, booking);
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updateValue = {
@@ -165,13 +145,10 @@ async function run() {
       res.send(result);
     });
 
-    // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    console.log("✅ Successfully connected to MongoDB!");
   } finally {
-    // Ensures that the client will close when you finish/error
+    // You may close the client when needed
     // await client.close();
   }
 }
@@ -182,5 +159,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Harmony server in running on port ${port}`);
+  console.log(`✅ Harmony server is running on port ${port}`);
 });
