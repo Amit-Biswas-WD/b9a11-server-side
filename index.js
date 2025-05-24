@@ -1,10 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
-
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -12,13 +9,12 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://history-client-side-66e3d.web.app",
+      "https://playful-bavarois-a2bfd7.netlify.app",
     ],
     credentials: true,
   })
 );
 app.use(express.json());
-app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.yit3t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -30,37 +26,6 @@ const client = new MongoClient(uri, {
   },
 });
 
-const logger = async (req, res, next) => {
-  console.log("log: info", req.method, req.url);
-  next();
-};
-
-const verifyToken = async (req, res, next) => {
-  const token = req.cookies?.token;
-  console.log("token in the middleware", token);
-
-  if (!token) {
-    return res.status(401).send({ message: "Token missing or invalid" });
-  }
-
-  jwt.verify(token, process.env.ACCESS_SECRET_TOKEN, (err, decoded) => {
-    if (err) {
-      console.error("Token verification error:", err);
-      return res.status(401).send({ message: "Token expired or invalid" });
-    }
-
-    console.log("value in the token", decoded);
-    req.user = decoded;
-    next();
-  });
-};
-
-const cookieOption = {
-  httpOnly: true,
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-  secure: process.env.NODE_ENV === "production" ? true : false,
-};
-
 async function run() {
   try {
     await client.connect();
@@ -68,25 +33,7 @@ async function run() {
     const serviceCollection = client.db("harMoney").collection("services");
     const bookingCollections = client.db("harMoney").collection("booking");
 
-    app.post("/jwt", logger, async (req, res) => {
-      const user = req.body;
-      console.log("user for token", user);
-      const token = jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {
-        expiresIn: "24h",
-      });
-
-      res.cookie("token", token, cookieOption).send({ success: true });
-    });
-
-    app.post("/logout", async (req, res) => {
-      const user = req.body;
-      console.log("logging out ", user);
-      res
-        .clearCookie("token", { ...cookieOption, maxAge: 0 })
-        .send({ success: true });
-    });
-
-    app.get("/services", logger, async (req, res) => {
+    app.get("/services", async (req, res) => {
       const result = await serviceCollection.find().toArray();
       res.send(result);
     });
@@ -98,7 +45,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/booking", logger, async (req, res) => {
+    app.get("/booking", async (req, res) => {
       const email = req.query.email;
       const query = email ? { email } : {};
       const result = await bookingCollections.find(query).toArray();
@@ -148,8 +95,8 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log("✅ Successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    console.log(" Successfully connected to MongoDB!");
   } finally {
     // You may close the client when needed
     // await client.close();
@@ -162,5 +109,6 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`✅ Harmony server is running on port ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
+
